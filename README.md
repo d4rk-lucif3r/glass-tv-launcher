@@ -1,4 +1,4 @@
-# Arsh TV
+# Arsh's Glass TV
 
 **A fast, Apple TV–style home screen for Android TV, with an AI remote built in.**
 
