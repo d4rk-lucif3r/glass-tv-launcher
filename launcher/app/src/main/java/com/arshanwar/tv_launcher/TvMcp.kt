@@ -329,35 +329,55 @@ object TvMcp {
 
     // ---- Netflix: profile gate + play, verified through the system's playback list ----
     private const val NETFLIX = "com.netflix.ninja"
-    private fun netflixPlaying() = MediaDump.read(app).any { it.pkg == NETFLIX && it.playing }
+    /** Netflix rarely reports to the media-session list; the audio system does: one of its players is "started". */
+    private fun netflixPlaying(): Boolean {
+        val uid = try { pm().getApplicationInfo(NETFLIX, 0).uid } catch (e: Exception) { return false }
+        // through ADB's shell: the app's own DUMP grant doesn't cover the audio service's dump
+        return try { TvAdb.shell("dumpsys audio | grep 'u/pid:$uid/' | grep -c 'state:started'").trim().toIntOrNull()?.let { it > 0 } ?: false }
+        catch (e: Exception) { false }
+    }
     private fun waitFront(pkg: String, ms: Long): Boolean { val end = System.currentTimeMillis() + ms
         while (System.currentTimeMillis() < end) { if (frontPkg() == pkg) return true; Thread.sleep(400) }; return false }
     private fun waitPlaying(ms: Long): Boolean { val end = System.currentTimeMillis() + ms
         while (System.currentTimeMillis() < end) { if (netflixPlaying()) return true; Thread.sleep(1000) }; return false }
 
+    /**
+     * What Netflix's TV app actually accepts (worked out on the device):
+     *  - injected D-pad OK is ignored; Enter works (profile picker, Play button)
+     *  - a title link only counts while it's running if it looks like a partner link: plain http, explicit component,
+     *    extra source=30; a cold start with a link loses it behind "Who's watching?"
+     * So: get Netflix up and past the profile picker first, then send the link, then Enter.
+     */
     private fun netflix(hit: Where.Hit, autoplay: Boolean): String {
         val name = "\"${hit.title}\" (${hit.year})"
-        if (!TvAdb.available()) {   // no remote keys: open the link and say honestly what may be on screen
+        val id = Regex("/title/(\\d+)").find(hit.url)?.groupValues?.get(1)
+        if (id == null || !TvAdb.available()) {   // no remote keys: open the link and say honestly what may be on screen
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(hit.url)).setPackage(NETFLIX))
-            return "Sent Netflix the link for $name, but couldn't press keys (ADB unavailable), so it may be waiting on 'Who's watching?'"
+            return "Sent Netflix the link for $name; it may be waiting on 'Who's watching?' (couldn't press keys)"
         }
-        val link = "am start -a android.intent.action.VIEW -d '${hit.url}' -p $NETFLIX"
-        val warm = frontPkg() == NETFLIX || MediaDump.read(app).any { it.pkg == NETFLIX }
-        TvAdb.shell(link)
-        if (!waitFront(NETFLIX, 15_000)) return "Netflix didn't come to the front (tried to open $name)"
-        Thread.sleep(if (warm) 3500 else 8000)   // cold start: splash, then "Who's watching?"
-        // OK here = picks the highlighted profile on the gate, or presses Play if Netflix went straight to the title
-        TvAdb.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        if (autoplay && waitPlaying(6000)) return "Playing $name on Netflix"
-        // now inside a profile: open the title again, so the link isn't lost behind the gate
-        TvAdb.shell(link)
-        Thread.sleep(4500)
-        if (!autoplay) return "Netflix is open on $name (picked the highlighted profile if it asked)"
-        TvAdb.key(KeyEvent.KEYCODE_DPAD_CENTER)        // Play / Resume is focused on a title page
-        if (waitPlaying(10_000)) return "Playing $name on Netflix"
-        TvAdb.key(KeyEvent.KEYCODE_DPAD_CENTER)        // one retry (slow load)
-        if (waitPlaying(8000)) return "Playing $name on Netflix"
-        throw IllegalStateException("Opened $name on Netflix but playback didn't start. It may need a profile PIN or a different profile; use press/get_status to continue.")
+        val enter = KeyEvent.KEYCODE_ENTER
+        val running = TvAdb.shell("pidof $NETFLIX").isNotBlank()
+        if (!running) {
+            TvAdb.shell("am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -n $NETFLIX/.MainActivity")
+            if (!waitFront(NETFLIX, 15_000)) return "Netflix didn't start"
+            Thread.sleep(9000)                       // splash, then "Who's watching?"
+            TvAdb.key(enter)                         // the highlighted (last used) profile
+            Thread.sleep(9000)                       // let the home page finish loading, or the link gets dropped
+        } else if (frontPkg() != NETFLIX) {
+            TvAdb.shell("am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -n $NETFLIX/.MainActivity")
+            waitFront(NETFLIX, 8000); Thread.sleep(2500)
+        }
+        val link = "am start -a android.intent.action.VIEW -d 'http://www.netflix.com/title/$id' -f 0x10000000 -e source 30 $NETFLIX/.MainActivity"
+        repeat(2) { attempt ->
+            TvAdb.shell(link)
+            Thread.sleep(6500)                       // title page loads
+            if (!autoplay) return "Netflix is open on $name"
+            TvAdb.key(enter)                         // Play / Resume is focused (or, if a profile picker was still up, this picks it)
+            // Netflix needs ~10-15 s from Play to sound on a slow TV (licence + buffering); re-sending the link sooner
+            // reopens the title page and starts that wait over
+            if (waitPlaying(25_000)) return "Playing $name on Netflix"
+        }
+        throw IllegalStateException("Opened $name on Netflix but playback didn't start (a profile PIN or an unusual screen?). Use press / get_status to continue.")
     }
 
     // ---- volume / power / input ----
@@ -445,7 +465,7 @@ object TvMcp {
 
     private fun press(button: String, times: Int): String {
         if (button == "home") { startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(app.packageName)); return "Pressed home" }
-        val code = keyCodes[button] ?: throw IllegalArgumentException("unknown button")
+        val code = (if (button == "select" && frontPkg() == NETFLIX) KeyEvent.KEYCODE_ENTER else keyCodes[button]) ?: throw IllegalArgumentException("unknown button")
         // real remote keys (any app, including Netflix); accessibility focus moves only if ADB can't be reached
         val viaAdb = try { TvAdb.key(*IntArray(times) { code }); true } catch (e: Exception) { android.util.Log.w("TvHome", "mcp adb key", e); false }
         if (!viaAdb) pressA11y(button, times)
