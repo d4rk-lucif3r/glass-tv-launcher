@@ -4,8 +4,7 @@
 
 Arsh TV replaces the stock launcher with a Top Shelf, glass panels, folders, an app switcher, aerial screensavers and more, all built with plain Android Views so it stays smooth on slow 2 GB TVs. It also turns the TV into an [MCP](https://modelcontextprotocol.io) server, so Claude, ChatGPT or any MCP client can find a show and put it on, pause, change the volume, or turn the TV off.
 
-<p align="center"><a href="docs/video/launch.mp4"><img src="https://github.com/user-attachments/assets/7bb29dd3-717f-41ce-a5cb-c11ba973559d" width="480" alt="Watch the launch video"></a><br><sub>▶ Watch the launch video (66 s)</sub></p>
-
+https://github.com/user-attachments/assets/7bb29dd3-717f-41ce-a5cb-c11ba973559d
 
 ![Home screen](docs/screenshots/home.jpg)
 
