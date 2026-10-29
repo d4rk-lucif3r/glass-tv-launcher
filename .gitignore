@@ -1,0 +1,22 @@
+# Build output
+**/build/
+**/.gradle/
+**/.kotlin/
+*.apk
+*.aab
+
+# Machine-specific / secrets (never commit)
+**/local.properties
+*.keystore
+*.jks
+*.pem
+.env
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+
+# Personal working files: device package dumps and test screenshots
+backup/
+screens/

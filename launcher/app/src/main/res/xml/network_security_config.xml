@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Apple's aerial host uses a root CA Android doesn't ship; its http:// endpoint is used instead (public videos). -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">sylvan.apple.com</domain>
+    </domain-config>
+</network-security-config>

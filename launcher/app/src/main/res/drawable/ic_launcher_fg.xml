@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "A" monogram whose counter is a play triangle; kept inside the 66dp adaptive-icon safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M35,79 L54,30 L73,79"
+        android:strokeColor="#FFFFFFFF" android:strokeWidth="8.5"
+        android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" />
+    <path android:pathData="M49,57.5 L49,71.5 L61,64.5 Z"
+        android:fillColor="#FFFFFFFF" android:strokeColor="#FFFFFFFF" android:strokeWidth="2.5" android:strokeLineJoin="round" />
+</vector>

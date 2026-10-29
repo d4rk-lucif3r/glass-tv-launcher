@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 16:9 Android TV banner: same gradient, monogram centred -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="320dp" android:height="180dp" android:viewportWidth="320" android:viewportHeight="180">
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="320" android:endY="180">
+                <item android:offset="0" android:color="#FF4F5BFF" />
+                <item android:offset="0.55" android:color="#FF8E44E6" />
+                <item android:offset="1" android:color="#FFFF375F" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M137,128 L160,52 L183,128"
+        android:strokeColor="#FFFFFFFF" android:strokeWidth="12"
+        android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" />
+    <path android:pathData="M153,95 L153,115 L170,105 Z"
+        android:fillColor="#FFFFFFFF" android:strokeColor="#FFFFFFFF" android:strokeWidth="3.5" android:strokeLineJoin="round" />
+</vector>
